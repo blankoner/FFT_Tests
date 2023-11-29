@@ -24,8 +24,8 @@ void DFT(std::complex<double> *C, double *f, int N_in, double *Mods)
       C[n] += std::complex<double>(f[i], 0.0) * exp((-j * std::complex<double>((2*M_PI*i*n), 0.0))/static_cast<double>(N_in));
       licznik++;
     }
-    if(abs(C[n].real()) < 1e-5) C[n].real(0.0);
-    if(abs(C[n].imag()) < 1e-5) C[n].imag(0.0);
+    if(fabs(C[n].real()) < 5e-4) C[n].real(0.0);
+    if(fabs(C[n].imag()) < 5e-4) C[n].imag(0.0);
     Mods[n] = CountModule(C[n].real(), C[n].imag());
   }
   std::cout << "Licznik DFT: " << licznik << std::endl;
@@ -59,8 +59,8 @@ void FFT(std::complex<double> *C, double *f, int N_in, double *Mods)
   }
   for(int n=0;n<N_in;n++)
   {
-    if(abs(C[n].real()) < 1e-5) C[n].real(0.0);
-    if(abs(C[n].imag()) < 1e-5) C[n].imag(0.0);
+    if(fabs(C[n].real()) < 5e-4) C[n].real(0.0);
+    if(fabs(C[n].imag()) < 5e-4) C[n].imag(0.0);
     Mods[n] = CountModule(C[n].real(), C[n].imag());
   }
   std::cout << "Licznik FFT: " << licznik << std::endl;
@@ -103,7 +103,6 @@ int main()
     Zero(Cn, N);
     FFT(Cn, fi, N, FFTmodules);
     IFFT(IFFTfi, Cn, N);
-    
     for(int i=0;i<N;i++) std::cout << i << " " << DFTmodules[i] << " " << IDFTfi[i].real() << " " << FFTmodules[i] << " " << IFFTfi[i].real() << std::endl;
   }
   else
