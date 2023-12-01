@@ -21,6 +21,7 @@ class Transformata
     void DFT();
     void IDFT();
     void FFT(std::complex<double>* data, int size);
+    void IFFT(std::complex<double>* data, int size);
     double CountModule(double re, double im){return sqrt(pow(re, 2) + pow(im, 2));}
     void Get1D();
     void Get2D();
@@ -129,6 +130,33 @@ void Transformata::FFT(std::complex<double>* data, int size)
   delete[]odd;
 }
 
+void Transformata::IFFT(std::complex<double>* data, int size)
+{
+  if(size <= 1) return;
+
+  std::complex<double>* even = new std::complex<double>[size / 2];
+  std::complex<double>* odd = new std::complex<double>[size / 2];
+
+  for (int i=0; i<size/2; ++i)
+  {
+    even[i] = data[i*2];
+    odd[i] = data[i*2 + 1];
+  }
+
+  IFFT(even, size/2);
+  IFFT(odd, size/2);
+
+  for(int i=0; i<size/2; ++i)
+  {
+    std::complex<double> t = std::polar(1.0, 2.0 * M_PI * i / size) * odd[i];
+    data[i] = even[i] + t;
+    data[i + size/2] = even[i] - t;
+  }
+
+  delete[]even;
+  delete[]odd;
+}
+
 void Transformata::Get1D()
 {
   std::cout << "Zlozonosc DFT: " << licznikDFT << std::endl;
@@ -139,7 +167,7 @@ void Transformata::Get1D()
     if(fabs(FFTfi[i].imag()) < 0.0005) FFTfi[i].imag(0.0);
     FFTmodules[i] = CountModule(FFTfi[i].real(), FFTfi[i].imag());
   }
-  for(int i=0;i<N;i++) std::cout << i << " " << fi[i].real() << " " << DFTmodules[i] << " " << IDFTfi[i].real() << " " << FFTmodules[i] << std::endl;
+  for(int i=0;i<N;i++) std::cout << i << " " << fi[i].real() << " " << DFTmodules[i] << " " << IDFTfi[i].real() << " " << FFTmodules[i] << " " << IFFTfi[i].real()/static_cast<double>(N) << std::endl;
 }
 
 void Transformata::Get2D()
@@ -163,6 +191,8 @@ void Transformata::Start()
     DFT();
     IDFT();
     FFT(FFTfi, N);
+    for(int i=0;i<N;i++) IFFTfi[i] = FFTfi[i];
+    IFFT(IFFTfi, N);
     Get1D();
   }
   else
