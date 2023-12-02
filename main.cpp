@@ -1,6 +1,7 @@
 #include <iostream>
 #include <complex>
 #include <cmath>
+#include <fftw3.h>
 
 class Transformata
 {
@@ -20,11 +21,11 @@ class Transformata
     void Build2D();
     void DFT();
     void IDFT();
-    void FFT(std::complex<double>* data, int size);
-    void IFFT(std::complex<double>* data, int size);
+    void FFT(std::complex<double>* f, int r);
+    void IFFT(std::complex<double>* f, int r);
+    void DFT2D();
     double CountModule(double re, double im){return sqrt(pow(re, 2) + pow(im, 2));}
     void Get1D();
-    void Get2D();
     void Start();
 };
 
@@ -102,27 +103,27 @@ void Transformata::IDFT()
   }
 }
 
-void Transformata::FFT(std::complex<double>* data, int size)
+void Transformata::FFT(std::complex<double>* f, int r)
 {
-  if(size <= 1) return;
+  if(r <= 1) return;
 
-  std::complex<double>* even = new std::complex<double>[size / 2];
-  std::complex<double>* odd = new std::complex<double>[size / 2];
+  std::complex<double>* even = new std::complex<double>[r / 2];
+  std::complex<double>* odd = new std::complex<double>[r / 2];
 
-  for (int i=0;i<size/2;++i)
+  for (int i=0;i<r/2;++i)
   {
-    even[i] = data[i*2];
-    odd[i] = data[i*2+1];
+    even[i] = f[i*2];
+    odd[i] = f[i*2+1];
   }
 
-  FFT(even, size/2);
-  FFT(odd, size/2);
+  FFT(even, r/2);
+  FFT(odd, r/2);
 
-  for(int i=0;i<size/2;++i)
+  for(int i=0;i<r/2;++i)
   {
-    std::complex<double> t = std::polar(1.0, -2.0 * M_PI * i / size) * odd[i];
-    data[i] = even[i] + t;
-    data[i+size/2] = even[i] - t;
+    std::complex<double> t = std::polar(1.0, -2.0 * M_PI * i / r) * odd[i];
+    f[i] = even[i] + t;
+    f[i+r/2] = even[i] - t;
     licznikFFT+=2;
   }
 
@@ -130,31 +131,53 @@ void Transformata::FFT(std::complex<double>* data, int size)
   delete[]odd;
 }
 
-void Transformata::IFFT(std::complex<double>* data, int size)
+void Transformata::IFFT(std::complex<double>* f, int r)
 {
-  if(size <= 1) return;
+  if(r <= 1) return;
 
-  std::complex<double>* even = new std::complex<double>[size / 2];
-  std::complex<double>* odd = new std::complex<double>[size / 2];
+  std::complex<double>* even = new std::complex<double>[r / 2];
+  std::complex<double>* odd = new std::complex<double>[r / 2];
 
-  for (int i=0; i<size/2; ++i)
+  for (int i=0; i<r/2; ++i)
   {
-    even[i] = data[i*2];
-    odd[i] = data[i*2 + 1];
+    even[i] = f[i*2];
+    odd[i] = f[i*2 + 1];
   }
 
-  IFFT(even, size/2);
-  IFFT(odd, size/2);
+  IFFT(even, r/2);
+  IFFT(odd, r/2);
 
-  for(int i=0; i<size/2; ++i)
+  for(int i=0; i<r/2; ++i)
   {
-    std::complex<double> t = std::polar(1.0, 2.0 * M_PI * i / size) * odd[i];
-    data[i] = even[i] + t;
-    data[i + size/2] = even[i] - t;
+    std::complex<double> t = std::polar(1.0, 2.0 * M_PI * i / r) * odd[i];
+    f[i] = even[i] + t;
+    f[i + r/2] = even[i] - t;
   }
 
   delete[]even;
   delete[]odd;
+}
+
+void Transformata::DFT2D()
+{
+  bool REAL = 0, IMAG = 1;
+  fftw_complex *out;
+  out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N * M);
+  fftw_plan plan = fftw_plan_dft_2d(N, M, (fftw_complex*)fi2d, out, FFTW_FORWARD, FFTW_ESTIMATE);
+  fftw_execute(plan);
+  
+  for(int i=0;i<N;i++)
+  {
+    for(int j=0;j<M;j++)
+    {
+      //std::cout << out[i*M+j][REAL] << " " << out[i*M+j][IMAG] << " ";
+      std::cout << CountModule(out[i*M+j][REAL], out[i*M+j][IMAG]) << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  fftw_destroy_plan(plan);
+  fftw_free(out);
 }
 
 void Transformata::Get1D()
@@ -168,18 +191,6 @@ void Transformata::Get1D()
     FFTmodules[i] = CountModule(FFTfi[i].real(), FFTfi[i].imag());
   }
   for(int i=0;i<N;i++) std::cout << i << " " << fi[i].real() << " " << DFTmodules[i] << " " << IDFTfi[i].real() << " " << FFTmodules[i] << " " << IFFTfi[i].real()/static_cast<double>(N) << std::endl;
-}
-
-void Transformata::Get2D()
-{
-  for(int i=0;i<N;i++)
-  {
-    for(int j=0;j<M;j++)
-    {
-      std::cout << fi2d[i][j] << " ";
-    }
-    std::cout << std::endl;
-  }
 }
 
 void Transformata::Start()
@@ -198,7 +209,7 @@ void Transformata::Start()
   else
   {
     Build2D();
-    Get2D();
+    DFT2D();
   }
 }
 
